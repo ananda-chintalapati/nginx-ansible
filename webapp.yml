@@ -1,0 +1,28 @@
+---
+ - hosts: all
+   vars:
+    - docroot: /var/www/example
+   tasks:
+    - name: Add nginx repo
+      apt_repository: repo='ppa:nginx/stable' state=present
+      register: repoadd
+
+    - name: Install nginx
+      apt: pkg=nginx state=installed
+      when: repoadd|success
+      register: nginxinstall
+      notify: 
+         - Start nginx
+
+    - name: Create directory
+      when: nginxinstall|success
+      file: dest={{ docroot }} state=directory mode=755 owner=www-data group=www-data
+      notify:
+         - Reload nginx
+
+   handlers:
+    - name: Start nginx
+      service: name=nginx state=started
+
+    - name: Reload nginx
+      service: name=nginx state=reloaded
